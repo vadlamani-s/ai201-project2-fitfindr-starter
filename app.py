@@ -32,19 +32,41 @@ def handle_query(user_query: str, wardrobe_choice: str) -> tuple[str, str, str]:
         A tuple of three strings:
             (listing_text, outfit_suggestion, fit_card)
         Each string maps to one of the three output panels in the UI.
-
-    TODO:
-        1. Guard against an empty query (return early with an error message).
-        2. Select the wardrobe based on wardrobe_choice.
-        3. Call run_agent() with the query and selected wardrobe.
-        4. If session["error"] is set, return the error in the first panel
-           and empty strings for the other two.
-        5. Otherwise, format session["selected_item"] into a readable listing_text
-           string and return it along with session["outfit_suggestion"] and
-           session["fit_card"].
     """
-    # TODO: implement this function
-    return "Agent not yet implemented.", "", ""
+    query_text = user_query.strip() if isinstance(user_query, str) else ""
+    if not query_text:
+        return (
+            "Please enter a search query so FitFindr can find a thrifted item.",
+            "",
+            "",
+        )
+
+    if wardrobe_choice == "Empty wardrobe (new user)":
+        wardrobe = get_empty_wardrobe()
+    else:
+        wardrobe = get_example_wardrobe()
+
+    session = run_agent(query_text, wardrobe)
+    if session.get("error"):
+        return session["error"], "", ""
+
+    item = session.get("selected_item") or {}
+    title = item.get("title") or item.get("name") or "No listing title"
+    price = item.get("price")
+    platform = item.get("platform") or "unknown platform"
+    size = item.get("size") or "size unknown"
+    condition = item.get("condition") or "condition unknown"
+    colors = ", ".join(item.get("colors", [])) if item.get("colors") else "varied colors"
+    brand = item.get("brand") or "no brand"
+
+    listing_text = (
+        f"{title}\n"
+        f"Price: ${price} on {platform}\n"
+        f"Size: {size} | Condition: {condition}\n"
+        f"Brand: {brand} | Colors: {colors}"
+    )
+
+    return listing_text, session.get("outfit_suggestion", ""), session.get("fit_card", "")
 
 
 # ── interface ─────────────────────────────────────────────────────────────────
